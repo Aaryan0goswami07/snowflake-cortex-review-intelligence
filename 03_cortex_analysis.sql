@@ -13,22 +13,29 @@ USE SCHEMA RAW;
 -- Real use case: automatically flag bad reviews for support team
 -- ============================================================
 
+-- 1. SENTIMENT ANALYSIS - Score + Label (optimized single call)
+WITH scored AS (
+    SELECT
+        review_id,
+        review_text,
+        review_language,
+        star_rating,
+        ROUND(SNOWFLAKE.CORTEX.SENTIMENT(review_text), 3) AS sentiment_score
+    FROM product_reviews
+    WHERE review_language = 'en'
+)
 SELECT
     review_id,
-    product_name,
-    reviewer_name,
+    review_text,
+    review_language,
     star_rating,
-    LEFT(review_text, 60)                        AS review_preview,
-    ROUND(
-        SNOWFLAKE.CORTEX.SENTIMENT(review_text)
-    , 3)                                         AS sentiment_score,
+    sentiment_score,
     CASE
-        WHEN SNOWFLAKE.CORTEX.SENTIMENT(review_text) >  0.3 THEN 'Positive'
-        WHEN SNOWFLAKE.CORTEX.SENTIMENT(review_text) < -0.3 THEN 'Negative'
+        WHEN sentiment_score > 0.3 THEN 'Positive'
+        WHEN sentiment_score < -0.3 THEN 'Negative'
         ELSE 'Neutral'
-    END                                          AS sentiment_label
-FROM product_reviews
-WHERE review_language = 'en'
+    END AS sentiment_label
+FROM scored
 ORDER BY sentiment_score ASC;
 
 
@@ -58,16 +65,18 @@ ORDER BY review_id;
 -- Condense long reviews into 1-2 sentences
 -- Real use case: product managers reading 1000s of reviews
 -- ============================================================
-
+-- Summarize all reviews by translating non-English ones first
 SELECT
     review_id,
-    product_name,
-    star_rating,
-    review_text                                  AS full_review,
-    SNOWFLAKE.CORTEX.SUMMARIZE(review_text)      AS ai_summary
-FROM product_reviews
-WHERE review_language = 'en'
-ORDER BY review_id;
+    review_text,
+    review_language,
+    SNOWFLAKE.CORTEX.SUMMARIZE(
+        CASE
+            WHEN review_language = 'en' THEN review_text
+            ELSE SNOWFLAKE.CORTEX.TRANSLATE(review_text, review_language, 'en')
+        END
+    ) AS summary
+FROM product_reviews;
 
 
 -- ============================================================
@@ -164,7 +173,7 @@ SELECT
             'Based on these product reviews, suggest 3 specific improvements. ',
             'Be concise and actionable. Product: ', product_name, '. ',
             'Reviews: ',
-            LISTAGG(LEFT(review_text, 150), ' | ') WITHIN GROUP (ORDER BY review_id)
+            LISTAGG(LEFT(review_text, 500), ' | ') WITHIN GROUP (ORDER BY review_id)
         )
     )                                            AS improvement_suggestions
 FROM product_reviews
