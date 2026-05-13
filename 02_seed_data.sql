@@ -69,4 +69,4 @@ INSERT INTO product_reviews VALUES
 
 (15, 'Bookshelf',      'Furniture',   'Pooja Singh',   'en',
  'Solid bookshelf, easy to assemble. Holds all my books without any bending. The wood finish looks premium. Assembled in 20 minutes with the included tools. Would buy again and recommend to friends.',
- 5, '2026-03-20');
+ 5, '2026-03-20')COMMIT;
