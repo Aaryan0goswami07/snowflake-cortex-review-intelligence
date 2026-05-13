@@ -106,3 +106,9 @@ In production, a data analyst doesn't run 5 separate queries. They query one vie
 **Aaryan Goswami** — BBA Business Analytics, Manipal University Jaipur
 Backtesting Lead @ AperioHub (Singapore) | Building toward AI + Analytics career
 [LinkedIn](https://linkedin.com/in/aaryan-goswami-058920240) · [GitHub](https://github.com/Aaryan0goswami07)
+
+
+### Troubleshooting
+- **Warehouse not starting**: Run `ALTER WAREHOUSE CORTEX_WH RESUME;` before executing scripts.
+- **Permission errors**: Ensure your role has `CORTEX_USER` database role granted. Ask your Snowflake admin.
+- **Rate limit errors**: Cortex LLM functions have concurrency limits. Space out large batch queries.
